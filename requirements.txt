@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+cryptography
+redis
+asyncpg
+pydantic-settings
+pytest
+pytest-asyncio
+httpx
+websockets
