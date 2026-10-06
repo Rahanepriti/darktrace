@@ -1,8 +1,7 @@
 """ Crawler-side WebSocket client. --- This is NOT the production crawler code --
-it's a simulator to test ws_server.py end-to-end without needing the real crawler team's code. 
+A simulator to test ws_server.py end-to-end without needing the real crawler team's code. 
 
-it connects OUTBOUND to the API, never
-accepts incoming connections, encrypts every message before sending.
+it connects OUTBOUND to the API, never accepts incoming connections, encrypts every message before sending.
 
 Run directly: python crawler_client.py
 """
