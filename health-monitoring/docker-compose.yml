@@ -1,0 +1,95 @@
+# Local development Compose configuration.
+# Secrets are read from .env. Never commit .env.
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-health}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required in .env}@postgres:5432/${POSTGRES_DB:-health}
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required in .env}@redis:6379/0
+      HEALTH_ENCRYPTION_KEY: ${HEALTH_ENCRYPTION_KEY:?HEALTH_ENCRYPTION_KEY is required in .env}
+      ACTIVE_KEY_VERSION: ${ACTIVE_KEY_VERSION:-1}
+      HEALTH_ENCRYPTION_KEYS_PREVIOUS: ${HEALTH_ENCRYPTION_KEYS_PREVIOUS:-}
+      HEALTH_ENCRYPTION_KEYS_FILE: ${HEALTH_ENCRYPTION_KEYS_FILE:-}
+      KEY_REFRESH_SECONDS: ${KEY_REFRESH_SECONDS:-60}
+      HEALTH_API_TOKEN: ${HEALTH_API_TOKEN:?HEALTH_API_TOKEN is required in .env}
+      CRAWLER_WS_TOKEN: ${CRAWLER_WS_TOKEN:?CRAWLER_WS_TOKEN is required in .env}
+      HEARTBEAT_INTERVAL_SECONDS: ${HEARTBEAT_INTERVAL_SECONDS:-20}
+      HEARTBEAT_TTL_SECONDS: ${HEARTBEAT_TTL_SECONDS:-40}
+      HEARTBEAT_MAX_AGE_SECONDS: ${HEARTBEAT_MAX_AGE_SECONDS:-300}
+      CRAWLER_UNHEALTHY_AFTER_SECONDS: ${CRAWLER_UNHEALTHY_AFTER_SECONDS:-300}
+      DATABASE_TIMEOUT_SECONDS: ${DATABASE_TIMEOUT_SECONDS:-1}
+      REDIS_TIMEOUT_SECONDS: ${REDIS_TIMEOUT_SECONDS:-1}
+      HEALTH_BUDGET_SECONDS: ${HEALTH_BUDGET_SECONDS:-1.8}
+      PUBLIC_HEALTH_ENDPOINT: ${PUBLIC_HEALTH_ENDPOINT:-false}
+      MONITOR_ENABLED: ${MONITOR_ENABLED:-true}
+      MONITOR_PUSH_INTERVAL_SECONDS: ${MONITOR_PUSH_INTERVAL_SECONDS:-3}
+      HEALTH_WS_URL: ${HEALTH_WS_URL:-ws://localhost:8000/api/v1/ws/health}
+      WORKER_ID: ${WORKER_ID:-cw-1}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-health}
+      POSTGRES_DB: ${POSTGRES_DB:-health}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-health} -d ${POSTGRES_DB:-health}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD is required in .env}"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required in .env}
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  crawler:
+    profiles: ["demo"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      APP_ENV: development
+      HEALTH_WS_URL: ws://api:8000/api/v1/ws/health
+    command: ["python", "-m", "app.crawler.heartbeat_client"]
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
