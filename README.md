@@ -1,6 +1,6 @@
-# CyArt DarkTrace Health Monitoring Service
+# Health Monitoring Service
 
-A health monitoring service for the CyArt DarkTrace platform.
+A health monitoring service
 
 The service monitors:
 
