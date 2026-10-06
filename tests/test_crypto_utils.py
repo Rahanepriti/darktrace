@@ -1,6 +1,6 @@
 """
-Quick standalone verification for crypto_utils.py before building
-anything on top of it. Run with: python tests/test_crypto_utils.py
+Quick standalone verification for crypto_utils.py before building anything on top of it. 
+Run with: python tests/test_crypto_utils.py
 """
 import sys
 import os

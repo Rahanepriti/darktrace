@@ -1,6 +1,5 @@
-"""
-Shared AES-256-GCM encrypt/decrypt utility -- used by BOTH the API
-(decrypting incoming heartbeats) and the crawler-side client (encrypting
+""" --- Shared AES-256-GCM encrypt/decrypt utility -- 
+used by BOTH the API (decrypting incoming heartbeats) and the crawler-side client (encrypting
 outgoing heartbeats). This is the one module both sides must agree on
 byte-for-byte, so its interface is intentionally small and explicit.
 
@@ -10,7 +9,7 @@ AESGCM.encrypt() already appends the tag to the ciphertext, so we only
 need to prepend our own random nonce ourselves and strip it back off
 before decrypting.
 
-Per the task spec (Section 6):
+
 - AES-256-GCM only (never CBC) -- GCM's auth tag means a tampered or
   corrupted message is REJECTED, not silently decrypted into garbage.
 - A fresh random nonce per message is mandatory -- reusing a nonce under
@@ -30,10 +29,8 @@ KEY_SIZE_BYTES = 32    # 256 bits -- AES-256
 
 
 class DecryptionError(Exception):
-    """Raised when a message fails to decrypt -- wrong key, corrupted
-    bytes, or (most importantly) a tampered message whose auth tag
-    doesn't match. Callers (the WS handler) must catch this specifically
-    and reject the message, never let it crash the connection."""
+    """wrong key, corrupted bytes, tampered message whose auth tag doesn't match. 
+    Callers (the WS handler) must catch this specifically and reject the message, never let it crash the connection."""
     pass
 
 
@@ -79,18 +76,6 @@ def decrypt(blob: bytes, key: bytes) -> bytes:
         # never silently decrypted into garbage.
         raise DecryptionError("authentication failed -- message is corrupted or was tampered with")
 
-
-# ---------------------------------------------------------------------
-# Key loading, by reference/version (spec Section 6: support rotating
-# the key without a crawler redeploy -- callers ask for "the active
-# key" by reference, not by hardcoding a value).
-#
-# This is a STAND-IN for the real secrets store (Vault-class, per spec).
-# Replace load_key_by_version()'s body with a real Vault/secrets-manager
-# call before this goes anywhere near production -- env vars are only
-# acceptable here because this is local dev/demo, never commit real
-# key material even to a .env file that might get shared.
-# ---------------------------------------------------------------------
 
 def load_key_by_version(version: str) -> bytes:
     """Loads a specific key version, e.g. load_key_by_version("v1").

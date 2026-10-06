@@ -1,5 +1,5 @@
 """Quick verification for redis_cache.py -- requires a running Redis
-(see .env REDIS_URL). Run with: python tests/test_redis_cache.py"""
+Run with: python tests/test_redis_cache.py"""
 import sys
 import os
 import time
