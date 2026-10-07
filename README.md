@@ -126,4 +126,4 @@ Both should print `All ... tests passed.` with no errors. These check:
 - **degraded** - database OK, but at least one crawler is stale/down/error
 - **healthy** - database OK and every known crawler reporting `ok`
 
- 
+ <img width="1920" height="1080" alt="Image" src="https://github.com/user-attachments/assets/b597278e-7c2f-4e81-9117-e572de443450" />
