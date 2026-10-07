@@ -1,18 +1,8 @@
 """
-WebSocket endpoint the crawler connects to and sends encrypted heartbeats
-over. Zero-trust rule from the spec: the API never initiates a connection
-to the crawler -- the crawler always connects outbound to us. This file
-only ever RECEIVES.
-
-Per message, in order:
-  1. Decrypt (crypto_utils.decrypt) -- wrong key or tampered bytes = reject.
-  2. Parse JSON and validate required fields are present and the right type.
-  3. Replay check -- reject anything whose own "ts" is too old.
-  4. Store into Redis (redis_cache.set_crawler_status).
+WebSocket endpoint the crawler connects to and sends encrypted heartbeats over.  
 
 A bad message at any step is logged and the connection is kept open --
-one malformed heartbeat must never crash the whole WS connection, let
-alone the server.
+one malformed heartbeat must never crash the whole WS connection, let alone the server.
 """
 import json
 import time
@@ -29,17 +19,12 @@ REQUIRED_FIELDS = {"crawler_id": str, "status": str, "ts": (int, float)}
 VALID_STATUSES = {"ok", "degraded", "error"}
 
 
+# Raised when decrypted JSON doesn't match the expected heartbeat schema
 class ValidationError(Exception):
-    """Raised when decrypted JSON doesn't match the expected heartbeat
-    schema. Kept separate from DecryptionError so logs clearly show
-    WHICH stage rejected the message."""
     pass
 
 
 def validate_heartbeat(data: dict) -> None:
-    """Checks required fields exist with the right type, and that
-    status is one of the values we actually know how to handle.
-    Raises ValidationError with a specific reason on any mismatch."""
     for field, expected_type in REQUIRED_FIELDS.items():
         if field not in data:
             raise ValidationError(f"missing required field '{field}'")

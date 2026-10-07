@@ -1,23 +1,5 @@
-""" --- Shared AES-256-GCM encrypt/decrypt utility -- 
-used by BOTH the API (decrypting incoming heartbeats) and the crawler-side client (encrypting
-outgoing heartbeats). This is the one module both sides must agree on
-byte-for-byte, so its interface is intentionally small and explicit.
+# encryption + decryption
 
-Wire format produced by encrypt() / consumed by decrypt():
-    [12-byte nonce][ciphertext][16-byte GCM auth tag]
-AESGCM.encrypt() already appends the tag to the ciphertext, so we only
-need to prepend our own random nonce ourselves and strip it back off
-before decrypting.
-
-
-- AES-256-GCM only (never CBC) -- GCM's auth tag means a tampered or
-  corrupted message is REJECTED, not silently decrypted into garbage.
-- A fresh random nonce per message is mandatory -- reusing a nonce under
-  the same key breaks GCM's security guarantee entirely. secrets.token_bytes
-  gives us a cryptographically secure random nonce each call.
-- Keys are never hard-coded, never committed, never passed as a URL/query
-  parameter. See load_key_by_version() below for how keys are loaded.
-"""
 import os
 import secrets
 
@@ -29,15 +11,11 @@ KEY_SIZE_BYTES = 32    # 256 bits -- AES-256
 
 
 class DecryptionError(Exception):
-    """wrong key, corrupted bytes, tampered message whose auth tag doesn't match. 
-    Callers (the WS handler) must catch this specifically and reject the message, never let it crash the connection."""
     pass
 
 
 def generate_key() -> bytes:
-    """Generates a new random 256-bit key. Used by whoever provisions
-    keys into the secrets store -- not called during normal encrypt/decrypt."""
-    return secrets.token_bytes(KEY_SIZE_BYTES)
+    return secrets.token_bytes(KEY_SIZE_BYTES)  # Generates a new random 256-bit key
 
 
 def encrypt(plaintext: bytes, key: bytes) -> bytes:

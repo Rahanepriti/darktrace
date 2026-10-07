@@ -1,5 +1,6 @@
-#FastAPI app: mounts the WebSocket heartbeat receiver and exposes GET /api/v1/health, which combines DB connectivity + crawler heartbeat status (read from Redis) into one overall status.
-#Run: uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+#FastAPI app: mounts the WebSocket heartbeat receiver and exposes GET /api/v1/health, 
+#which combines DB connectivity + crawler heartbeat status (read from Redis) into one overall status.
+ 
 
 import time
 
