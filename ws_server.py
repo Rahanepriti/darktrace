@@ -1,9 +1,5 @@
-"""
-WebSocket endpoint the crawler connects to and sends encrypted heartbeats over.  
+#WebSocket endpoint the crawler connects to and sends encrypted heartbeats over.  
 
-A bad message at any step is logged and the connection is kept open --
-one malformed heartbeat must never crash the whole WS connection, let alone the server.
-"""
 import json
 import time
 
@@ -19,8 +15,8 @@ REQUIRED_FIELDS = {"crawler_id": str, "status": str, "ts": (int, float)}
 VALID_STATUSES = {"ok", "degraded", "error"}
 
 
-# Raised when decrypted JSON doesn't match the expected heartbeat schema
-class ValidationError(Exception):
+
+class ValidationError(Exception): # Raised when decrypted JSON doesn't match the expected heartbeat schema
     pass
 
 

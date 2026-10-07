@@ -3,7 +3,7 @@ Database connectivity check for GET /api/v1/health.
 
 Runs a trivial query (SELECT 1) against DATABASE_URL with a timeout --
 we don't want a hung DB to hang the whole health endpoint. If
-DATABASE_URL isn't configured at all, we say so explicitly rather than
+DATABASE_URL isn't configured at all, it will say so explicitly rather than
 pretending the DB is healthy.
 """
 import asyncio
@@ -13,10 +13,6 @@ from config import DATABASE_URL, DB_CHECK_TIMEOUT_SECONDS
 
 
 async def check_database() -> dict:
-    """Returns a dict describing DB health. Never raises -- any failure
-    (timeout, connection refused, bad credentials) is caught and
-    reported in the returned dict instead, because a crash here must
-    not take down the whole /health response."""
     if not DATABASE_URL:
         return {"ok": False, "detail": "DATABASE_URL not configured"}
 

@@ -1,11 +1,6 @@
-""" Thin wrapper around Redis for storing/reading each crawler's last known status. 
-The WS server WRITES here on every valid heartbeat; the /api/v1/health endpoint READS here -- 
-they never talk to each other directly, Redis is the handoff point.
-
-Why a TTL: if a crawler dies outright, we stop getting heartbeats for it.
-Instead of it just going silent and the key sitting there forever with stale "ok" data, 
-we set a TTL slightly above the expected heartbeat interval so the key naturally expires -- "no key" then means "no recent heartbeat", which is itself meaningful.
-"""
+# Thin wrapper around Redis for storing/reading each crawler's last known status. 
+# WS server WRITES here on every valid heartbeat; the /api/v1/health endpoint READS here 
+ 
 import json
 import time
 
