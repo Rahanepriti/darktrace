@@ -7,6 +7,12 @@ clears all accounts, sessions, alerts, and queued jobs.
 
 from __future__ import annotations
 
+import json
+import os
+
+import redis.asyncio as redis
+from dotenv import load_dotenv
+
 import hashlib
 import hmac
 import secrets
@@ -17,6 +23,24 @@ from urllib.parse import parse_qs
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+
+
+load_dotenv()
+
+REDIS_URL = os.getenv("REDIS_URL")
+if not REDIS_URL:
+    raise RuntimeError("REDIS_URL is not configured")
+
+redis_client = redis.from_url(
+    REDIS_URL,
+    decode_responses=True,
+    socket_connect_timeout=5,
+    socket_timeout=5,
+)
+
+ALERTS_KEY = "darktrace:alerts"
+ALERT_ID_KEY = "darktrace:alerts:next_id"
+
 
 app = FastAPI(title="DarkTrace development API", version="0.1.0-dev")
 app.add_middleware(
@@ -140,24 +164,47 @@ async def me(user: dict = Depends(_current_user)) -> dict:
     return _user_out(user)
 
 
+
 @app.get("/api/v1/alerts", tags=["Alerting"])
 async def list_alerts(_: dict = Depends(_current_user)) -> list[dict]:
-    return list(reversed(_alerts))
+    alerts = await redis_client.lrange(ALERTS_KEY, 0, -1)
+    return [json.loads(item) for item in alerts]
 
 
 @app.post("/api/v1/alerts", status_code=status.HTTP_201_CREATED, tags=["Alerting"])
-async def create_alert(payload: AlertPayload, _: dict = Depends(_current_user)) -> dict:
-    alert = {"id": f"alert_dev_{len(_alerts) + 1:03d}", **payload.model_dump(), "created_at": datetime.now(timezone.utc).isoformat()}
-    _alerts.append(alert)
+async def create_alert(
+    payload: AlertPayload,
+    _: dict = Depends(_current_user),
+) -> dict:
+    alert_id = await redis_client.incr(ALERT_ID_KEY)
+
+    alert = {
+        "id": f"alert_dev_{alert_id:03d}",
+        **payload.model_dump(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    await redis_client.lpush(ALERTS_KEY, json.dumps(alert))
     return alert
 
 
 @app.get("/api/v1/dashboard/summary", tags=["Dashboard"])
 async def dashboard_summary(_: dict = Depends(_current_user)) -> dict:
+    alerts = await redis_client.lrange(ALERTS_KEY, 0, -1)
     counts = {severity: 0 for severity in ("critical", "high", "medium", "low")}
-    for alert in _alerts:
-        counts[alert["severity"]] += 1
-    return {"total_cases": 0, "open_cases": 0, "alerts_by_severity": counts}
+
+    for item in alerts:
+        alert = json.loads(item)
+        severity = alert.get("severity", "medium")
+        if severity in counts:
+            counts[severity] += 1
+
+    return {
+        "total_cases": 0,
+        "open_cases": 0,
+        "alerts_by_severity": counts,
+    }
+
 
 
 @app.get("/api/v1/sources", tags=["Sources"])
