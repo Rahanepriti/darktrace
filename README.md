@@ -1,11 +1,36 @@
 # DarkTrace development setup
 
-This repository now includes a minimal development API so the frontend can run without a database, crawler, or external services. It is intentionally in-memory: restarting it clears accounts, sessions, alerts, and queued jobs.
+This repository now includes a minimal development API so the frontend can run without a database, crawler, or external services.The development API uses Redis to persist alerts across backend restarts. Accounts, sessions, and queued jobs remain in memory and are cleared when the backend restarts. Configure the `REDIS_URL` environment variable before starting the API.
 
 ## Requirements
 
 - Node.js 18+
 - Python 3.11+
+
+## Redis configuration
+
+The development API uses Redis to persist alerts across backend restarts. The Redis instance for this development setup is hosted on Railway.
+
+### Configuration
+
+Set the `REDIS_URL` environment variable to your Redis connection URL before starting the backend. For local development, you can store it in a `.env` file.
+
+Keep Redis credentials private. Never commit `.env` or publish the Redis connection URL in the README or source code.
+
+### Dependencies
+
+Install the development dependencies:
+
+```powershell
+cd backend
+python -m pip install -r requirements-dev.txt
+```
+
+### Persistence behavior
+
+- Alerts are stored in Redis and remain available after backend restarts, provided the Redis data is retained.
+- Accounts, sessions, and queued jobs remain in memory and are cleared when the backend restarts.
+- The Redis service must be available and reachable for alert operations to work.
 
 ## Run locally
 
@@ -38,7 +63,7 @@ Open [http://localhost:5173](http://localhost:5173), create an account, and sign
 ## What works in development
 
 - Register, sign in, sign out, and session validation
-- Dashboard reads for alerts, summary, sources, and crawl jobs
+- Dashboard reads alerts and severity summaries from Redis; sources and crawl jobs use the existing development implementation
 - Threat Intelligence reads in-memory alerts
 - Crawler page queues jobs against one safe, local development source
 
@@ -60,4 +85,4 @@ cd frontend
 npm run build
 ```
 
-The development API has no database files or migrations. Its data exists only while `dev_server.py` is running.
+The development API does not use database files or migrations. Alerts are stored in Redis and survive backend restarts. Accounts, sessions, and queued jobs remain in memory and are cleared when the backend restarts.
