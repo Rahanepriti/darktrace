@@ -38,8 +38,8 @@ redis_client = redis.from_url(
     socket_timeout=5,
 )
 
-ALERTS_KEY = "darktrace:alerts"
-ALERT_ID_KEY = "darktrace:alerts:next_id"
+ALERTS_KEY = os.getenv("ALERTS_KEY", "darktrace:alerts")
+ALERT_ID_KEY = os.getenv("ALERT_ID_KEY", "darktrace:alerts:next_id")
 
 
 app = FastAPI(title="DarkTrace development API", version="0.1.0-dev")
